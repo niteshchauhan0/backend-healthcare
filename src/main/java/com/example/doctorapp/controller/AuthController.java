@@ -23,7 +23,6 @@ public class AuthController {
     // Register new user
     @PostMapping("/register")
     public ResponseEntity<User> register(@RequestBody User user) {
-        // TODO: Ideally encrypt password here before saving
         User savedUser = userService.saveUser(user);
         return ResponseEntity.ok(savedUser);
     }
@@ -31,19 +30,13 @@ public class AuthController {
     // Login existing user and return JWT token
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        Optional<User> userOpt = userService.getUserByEmail(loginRequest.getEmail());
+        Optional<User> userOpt = userService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
 
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
-        }
-
-        User user = userOpt.get();
-
-        // For demo, plain password check; replace with BCryptPasswordEncoder for production
-        if (!user.getPassword().equals(loginRequest.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
 
+        User user = userOpt.get();
         String token = jwtTokenProvider.generateToken(user.getEmail(), user.getRole());
         return ResponseEntity.ok(Collections.singletonMap("token", token));
     }
